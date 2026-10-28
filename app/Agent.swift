@@ -4,9 +4,9 @@ import Observation
 import SwiftUI
 
 // "Clean up with Claude Code / Codex": the agent runs headless in the
-// background, read-only, and only writes a plan from the scan BlitzTree
+// background, read-only, and only writes a plan from the scan DisktreeX
 // already has. Its steps and plan cards stream into the side panel as they
-// happen. BlitzTree then does the cleanup itself, behind its own guards:
+// happen. DisktreeX then does the cleanup itself, behind its own guards:
 // moving folders to the Trash or running the owning tool's cleanup command.
 
 // MARK: - Agents on this Mac
@@ -65,7 +65,7 @@ nonisolated enum AgentLocator {
             }
         }
         let home = NSHomeDirectory()
-        // Where BlitzTree's own setup installs them, even if no shell knows yet.
+        // Where DisktreeX's own setup installs them, even if no shell knows yet.
         if !env.path.split(separator: ":").contains("\(home)/.local/bin"[...]) {
             env.path += ":\(home)/.local/bin"
         }
@@ -355,7 +355,7 @@ nonisolated enum CodexSessions {
 nonisolated enum CleanupGuard {
     static let home = NSHomeDirectory()
 
-    /// Folders BlitzTree never cleans, whatever the agent says.
+    /// Folders DisktreeX never cleans, whatever the agent says.
     static let protected = [
         "Documents", "Desktop", "Pictures", "Movies", "Music", ".ssh", ".gnupg", ".Trash",
         "Library/Mobile Documents", "Library/Mail", "Library/Messages", "Library/Keychains",
@@ -378,7 +378,7 @@ nonisolated enum CleanupGuard {
         ".local", ".local/share", "Downloads",
     ].reduce(into: []) { $0.insert(home + "/" + $1) }
 
-    /// The only commands BlitzTree runs: each tool's own cleanup.
+    /// The only commands DisktreeX runs: each tool's own cleanup.
     static let commands = [
         "uv cache clean", "uv cache prune", "bun pm cache rm", "npm cache clean", "pnpm store prune",
         "yarn cache clean", "brew cleanup", "brew autoremove", "docker system prune",
@@ -401,7 +401,7 @@ nonisolated enum CleanupGuard {
             // game, and so are Codex's chat folders (the user decides those).
             let allowed = rebuildable.contains((p as NSString).lastPathComponent) || codexChat(p) != nil
             if !allowed || dir.hasSuffix(".Trash") {
-                return "In ~/\(dir.dropFirst(home.count + 1)), which BlitzTree never cleans"
+                return "In ~/\(dir.dropFirst(home.count + 1)), which DisktreeX never cleans"
             }
         }
         if FileManager.default.fileExists(atPath: p + "/.git") { return "A git repository" }
@@ -414,7 +414,7 @@ nonisolated enum CleanupGuard {
     static func blockReason(command: String) -> String? {
         let c = command.trimmingCharacters(in: .whitespaces)
         guard commands.contains(where: { c == $0.trimmingCharacters(in: .whitespaces) || c.hasPrefix($0.hasSuffix(" ") ? $0 : $0 + " ") }) else {
-            return "BlitzTree only runs tools' own cleanup commands"
+            return "DisktreeX only runs tools' own cleanup commands"
         }
         let banned = [";", "|", "&", ">", "<", "`", "$", "\n", "*", "\\"]
         if banned.contains(where: { c.contains($0) }) { return "Command not allowed" }
@@ -493,7 +493,7 @@ final class PlanItem: Identifiable {
     let id = UUID()
     let spec: PlanItemSpec
     let paths: [String]
-    /// Why BlitzTree won't do this one (protected folder, bad command…).
+    /// Why DisktreeX won't do this one (protected folder, bad command…).
     let blocked: String?
     var selected: Bool
     var status: Status = .waiting
@@ -530,7 +530,7 @@ final class PlanItem: Identifiable {
         var reason: String?
         var kept: [String] = []
         var recent = 0
-        // A cache that is just a folder goes through the Trash and BlitzTree's
+        // A cache that is just a folder goes through the Trash and DisktreeX's
         // parallel delete: reversible in step one, and faster than the tool's
         // own single-threaded removal (bun took 20 s for 5 GB).
         let plainCache = ["bun pm cache rm", "npm cache clean", "uv cache clean", "pip cache purge",
@@ -549,7 +549,7 @@ final class PlanItem: Identifiable {
         } else if asked.isEmpty {
             reason = "Nothing to remove"
         } else {
-            // Paths BlitzTree won't touch are dropped; the card is blocked only
+            // Paths DisktreeX won't touch are dropped; the card is blocked only
             // when nothing is left.
             for path in asked {
                 if let why = CleanupGuard.blockReason(path: path) {
@@ -650,7 +650,7 @@ final class AgentRun {
                 || (phase == .deleting && $0.status == .running)
         }.reduce(0) { $0 + $1.bytes }
     }
-    /// The items the user chose and BlitzTree may touch.
+    /// The items the user chose and DisktreeX may touch.
     var targets: [PlanItem] { items.filter { $0.selected && $0.blocked == nil } }
 
     /// Space the disk actually got back (statfs), set when deleting ends.
@@ -805,7 +805,7 @@ final class AgentRun {
         withAnimation(.snappy) { phase = .planned }
     }
 
-    // MARK: Cleaning (BlitzTree does this, not the agent)
+    // MARK: Cleaning (DisktreeX does this, not the agent)
 
     /// Demo recordings only: walk through both steps without touching disk.
     private let dryRun = ProcessInfo.processInfo.environment["BZ_DEMO_DRYRUN"] != nil
@@ -1040,7 +1040,7 @@ nonisolated final class AgentStreamReader: @unchecked Sendable {
     /// Codex app server: say hello; the rest follows its replies.
     func begin() {
         send(["id": 1, "method": "initialize",
-              "params": ["clientInfo": ["name": "blitztree", "title": "BlitzTree", "version": "1"]]])
+              "params": ["clientInfo": ["name": "blitztree", "title": "DisktreeX", "version": "1"]]])
     }
 
     private func send(_ message: [String: Any]) {
@@ -1241,10 +1241,10 @@ nonisolated enum AgentPrompt {
         let (folders, files) = largestNodes(in: tree)
 
         var md = """
-        You are the cleanup agent inside BlitzTree, a macOS disk-space app. The user clicked \
+        You are the cleanup agent inside DisktreeX, a macOS disk-space app. The user clicked \
         "Clean up" and is watching a live view of your steps, so be fast. Their home folder is \(home).
 
-        Below is BlitzTree's scan (\(scanRoot == "/System/Volumes/Data" ? "whole disk" : scanRoot), \
+        Below is DisktreeX's scan (\(scanRoot == "/System/Volumes/Data" ? "whole disk" : scanRoot), \
         allocated sizes, measured seconds ago). Use it; do not re-scan the disk. Most plans need no \
         commands at all. Only check what you really cannot judge from the tables, batched (one \
         `du -sk a b c` beats several), at most 3 commands.
@@ -1259,7 +1259,7 @@ nonisolated enum AgentPrompt {
           - bytes: size in bytes.
           - paths: the absolute paths it covers.
           - action: "command" when the owning tool has its own cleanup and the item is that tool's \
-        cache, otherwise "trash" (BlitzTree moves the paths to the Trash itself). BlitzTree only runs \
+        cache, otherwise "trash" (DisktreeX moves the paths to the Trash itself). DisktreeX only runs \
         commands starting with one of: `uv cache clean`, `bun pm cache rm`, `npm cache clean --force`, \
         `pnpm store prune`, `yarn cache clean`, `brew cleanup --prune=all`, `docker system prune -f`, \
         `docker builder prune -f`, `xcrun simctl delete unavailable`, `xcrun simctl runtime delete <id>`, \
@@ -1282,7 +1282,7 @@ nonisolated enum AgentPrompt {
 
         """
         if !known.isEmpty {
-            md += "\n## Recognised by BlitzTree as rebuildable\n\n| Size | Path | What |\n|---:|---|---|\n"
+            md += "\n## Recognised by DisktreeX as rebuildable\n\n| Size | Path | What |\n|---:|---|---|\n"
             for item in known.prefix(120) {
                 md += "| \(Fmt.size(item.bytes)) | \(item.path) | \(item.kind) |\n"
             }
@@ -1401,7 +1401,7 @@ nonisolated enum AgentPrompt {
         the chat produced (exports, downloads, renders), `work` its scratch files. Nothing recreates \
         them, so group "ask", action "trash". One item per chat over 1 GB, titled from the chat name \
         with its date in the detail; smaller ones may share one item. The chat folder or its \
-        `outputs`/`work` subfolders are valid paths. BlitzTree keeps chats used in the last 2 days.
+        `outputs`/`work` subfolders are valid paths. DisktreeX keeps chats used in the last 2 days.
 
         | Size | Chat | Last used | Inside |
         |---:|---|---|---|

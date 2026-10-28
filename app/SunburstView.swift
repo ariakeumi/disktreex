@@ -48,6 +48,15 @@ final class SunburstNSView: NSView {
 
     override var isFlipped: Bool { true }
 
+    private var lightAppearance: Bool {
+        effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) != .darkAqua
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        effectiveAppearance.performAsCurrentDrawingAppearance { relayout() }
+    }
+
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
@@ -241,6 +250,7 @@ final class SunburstNSView: NSView {
         let radii: [CGFloat]
         let center: CGPoint
         let bounds: CGRect
+        let lightAppearance: Bool
     }
 
     /// Each worker exclusively owns its context and disjoint bitmap rows.
@@ -281,7 +291,7 @@ final class SunburstNSView: NSView {
             ctx.restoreGState()
         }
         let scene = RasterScene(segments: segments, paths: segmentPaths, rings: ringPaths,
-                                stroke: stroke, outline: outline, radii: radii, center: center, bounds: bounds)
+                                stroke: stroke, outline: outline, radii: radii, center: center, bounds: bounds, lightAppearance: lightAppearance)
         // Quartz's gradient rounding changes with the clip bounds. Render
         // those once in the original context, then split the costly stroke.
         Self.paintBase(scene, in: ctx, scale: scale)
@@ -323,13 +333,15 @@ final class SunburstNSView: NSView {
         // Draw in view points, y down, like the view itself.
         ctx.translateBy(x: 0, y: CGFloat(ctx.height))
         ctx.scaleBy(x: scale, y: -scale)
-        let bg = Style.background
+        let bg: CGFloat = scene.lightAppearance ? 0.96 : Style.background
         ctx.setFillColor(CGColor(red: bg, green: bg, blue: bg, alpha: 1))
         ctx.fill(bounds)
 
         for (i, s) in scene.segments.enumerated() {
             ctx.addPath(scene.paths[i])
-            ctx.setFillColor(CGColor(red: s.color.r, green: s.color.g, blue: s.color.b, alpha: 1))
+            let color: TypeColor.RGB = scene.lightAppearance && s.node == -1
+                ? (0.90, 0.90, 0.92) : s.color
+            ctx.setFillColor(CGColor(red: color.r, green: color.g, blue: color.b, alpha: 1))
             ctx.fillPath()
         }
 
@@ -353,7 +365,8 @@ final class SunburstNSView: NSView {
     }
 
     nonisolated private static func paintEdges(_ scene: RasterScene, in ctx: CGContext) {
-        let bg = Style.background, center = scene.center, radii = scene.radii
+        let bg: CGFloat = scene.lightAppearance ? 0.96 : Style.background
+        let center = scene.center, radii = scene.radii
         // Hairline gaps between arcs, in the background colour.
         if let outline = scene.outline {
             ctx.setFillColor(CGColor(red: bg, green: bg, blue: bg, alpha: 1))
@@ -369,14 +382,14 @@ final class SunburstNSView: NSView {
 
         // Centre disc: the folder being shown.
         let r = radii[0] - 3
-        let c = Style.centerFill
+        let c: CGFloat = scene.lightAppearance ? 0.99 : Style.centerFill
         ctx.setFillColor(CGColor(red: c, green: c, blue: c + 0.01, alpha: 1))
         ctx.fillEllipse(in: CGRect(x: center.x - r, y: center.y - r, width: 2 * r, height: 2 * r))
     }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let bitmap else {
-            NSColor(calibratedWhite: Style.background, alpha: 1).setFill()
+            NSColor.windowBackgroundColor.setFill()
             bounds.fill()
             return
         }
@@ -430,7 +443,7 @@ final class SunburstNSView: NSView {
 
         if hoveringCenter && model.viewRoot != 0 {
             let r = radii[0] - 3
-            ctx.setFillColor(NSColor.white.withAlphaComponent(0.07).cgColor)
+            ctx.setFillColor(NSColor.labelColor.withAlphaComponent(0.07).cgColor)
             ctx.fillEllipse(in: CGRect(x: center.x - r, y: center.y - r, width: 2 * r, height: 2 * r))
         }
         drawCenterLabel(tree: tree, model: model)
@@ -474,17 +487,17 @@ final class SunburstNSView: NSView {
         let lines: [NSAttributedString] = [
             NSAttributedString(string: title, attributes: [
                 .font: Self.titleFont,
-                .foregroundColor: NSColor.white.withAlphaComponent(0.72),
+                .foregroundColor: NSColor.secondaryLabelColor,
                 .paragraphStyle: para,
             ]),
             NSAttributedString(string: Fmt.size(size), attributes: [
                 .font: sizeFont!,
-                .foregroundColor: NSColor.white,
+                .foregroundColor: NSColor.labelColor,
                 .paragraphStyle: para,
             ]),
         ] + (detail.map { [NSAttributedString(string: $0, attributes: [
             .font: Self.detailFont,
-            .foregroundColor: NSColor.white.withAlphaComponent(0.45),
+            .foregroundColor: NSColor.secondaryLabelColor,
             .paragraphStyle: para,
         ])] } ?? [])
         let heights = lines.map { ceil($0.size().height) }

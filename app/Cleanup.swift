@@ -575,7 +575,7 @@ private struct PlanCard: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(current ? 0.10 : 0.05))
+                .fill(Color.primary.opacity(current ? 0.10 : 0.05))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -639,7 +639,7 @@ private struct PlanCard: View {
 private struct SkeletonCard: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.white.opacity(0.05))
+            .fill(Color.primary.opacity(0.05))
             .frame(height: 64)
             .phaseAnimator([0.4, 1.0]) { view, phase in
                 view.opacity(phase)
@@ -658,7 +658,7 @@ private struct Shimmer: ViewModifier {
                     let t = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.6) / 1.6
                     LinearGradient(
                         stops: [.init(color: .clear, location: t - 0.25),
-                                .init(color: .white.opacity(0.55), location: t),
+                                .init(color: Color.primary.opacity(0.55), location: t),
                                 .init(color: .clear, location: t + 0.25)],
                         startPoint: .leading, endPoint: .trailing
                     )

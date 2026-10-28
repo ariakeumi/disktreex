@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Build BlitzTree.app: Rust engine + Swift UI, assembled into a bundle.
+# Build DisktreeX.app: Rust engine + Swift UI, assembled into a bundle.
 set -euo pipefail
 cd "$(dirname "$0")"
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
@@ -26,7 +26,7 @@ if [[ ! -d "$SPARKLE/Sparkle.framework" ]]; then
     rm "$SPARKLE.tar.xz"
 fi
 
-APP=build/BlitzTree.app
+APP=build/DisktreeX.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 
@@ -38,8 +38,8 @@ swiftc app/*.swift \
     -L target/release -lblitztree \
     -framework AppKit -framework SwiftUI \
     -F "$SPARKLE" -framework Sparkle -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
-    -o "$APP/Contents/MacOS/BlitzTree"
-# The XPC services only serve sandboxed apps; BlitzTree isn't sandboxed.
+    -o "$APP/Contents/MacOS/DisktreeX"
+# The XPC services only serve sandboxed apps; DisktreeX isn't sandboxed.
 ditto "$SPARKLE/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 rm -rf "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices" \
        "$APP/Contents/Frameworks/Sparkle.framework/XPCServices"
@@ -49,12 +49,12 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>BlitzTree</string>
-    <key>CFBundleDisplayName</key><string>BlitzTree</string>
+    <key>CFBundleName</key><string>DisktreeX</string>
+    <key>CFBundleDisplayName</key><string>DisktreeX</string>
     <key>CFBundleIdentifier</key><string>dev.ahmed.blitztree</string>
     <key>CFBundleVersion</key><string>$VERSION</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
-    <key>CFBundleExecutable</key><string>BlitzTree</string>
+    <key>CFBundleExecutable</key><string>DisktreeX</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>$MIN_MACOS</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>

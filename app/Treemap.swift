@@ -321,12 +321,12 @@ nonisolated enum TreemapRenderer {
     }
 
     static func render(tree: Tree, pw: Int, ph: Int, scale: CGFloat, root rootIndex: Int,
-                       showFree: Bool, freeBytes: UInt64) -> Result {
+                       showFree: Bool, freeBytes: UInt64, lightAppearance: Bool = false) -> Result {
         // Lay it out once, then paint horizontal bands on every core; each
         // band runs the same steps in the same order over its own rows only,
         // so the result is pixel-identical to a single pass.
         let started = Date()
-        var layout = Layout(tree: tree, pw: pw, ph: ph, scale: scale, showFree: showFree, freeBytes: freeBytes)
+        var layout = Layout(tree: tree, pw: pw, ph: ph, scale: scale, showFree: showFree, freeBytes: freeBytes, lightAppearance: lightAppearance)
         layout.draw(rootIndex, CGRect(x: 0, y: 0, width: pw, height: ph), Cushion.baseHeight, Surface(), 0)
         layout.colors.save()
         let ops = layout.ops, shades = layout.shades
@@ -384,6 +384,7 @@ nonisolated enum TreemapRenderer {
         let tree: Tree
         let pw: Int, ph: Int, scale: CGFloat
         let showFree: Bool, freeBytes: UInt64
+        let lightAppearance: Bool
         var ops: [PaintOp] = []
         var shades: [Shade] = []
         var rects: [TMRect] = []
@@ -395,7 +396,8 @@ nonisolated enum TreemapRenderer {
         var items: [Squarify.Item] = []
         var placed: [Squarify.Placed] = []
 
-        init(tree: Tree, pw: Int, ph: Int, scale: CGFloat, showFree: Bool, freeBytes: UInt64) {
+        init(tree: Tree, pw: Int, ph: Int, scale: CGFloat, showFree: Bool, freeBytes: UInt64, lightAppearance: Bool = false) {
+            self.lightAppearance = lightAppearance
             self.tree = tree
             self.pw = pw; self.ph = ph; self.scale = scale
             self.showFree = showFree; self.freeBytes = freeBytes
@@ -470,7 +472,7 @@ nonisolated enum TreemapRenderer {
                     stripName += "  ▸  " + tree.name(fi)
                     layoutNode = fi
                 }
-                shade(rect, TypeColor.strip, Surface())
+                shade(rect, lightAppearance ? (0.94, 0.94, 0.96) : TypeColor.strip, Surface())
                 let strip = CGRect(x: rect.rawMinX, y: rect.rawMinY,
                                    width: rect.rawWidth, height: headerH)
                 labels.append(TMLabel(strip: points(strip), region: ptRect,
@@ -498,7 +500,7 @@ nonisolated enum TreemapRenderer {
                     let (kid, r) = placed[i]
                     if kid == -1 {
                         // Flat, quiet void — clearly "nothing here".
-                        shade(r, TypeColor.free, Surface())
+                        shade(r, lightAppearance ? (0.98, 0.98, 0.99) : TypeColor.free, Surface())
                         let pr = points(r)
                         if pr.width >= 90, pr.height >= 30 {
                             labels.append(TMLabel(strip: pr, region: pr, node: -1, depth: 1, name: "Free space"))

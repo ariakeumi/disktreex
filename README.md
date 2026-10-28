@@ -1,17 +1,17 @@
-<img src="assets/icon.png" width="128" alt="BlitzTree icon">
+<img src="assets/icon.png" width="128" alt="DisktreeX icon">
 
-# BlitzTree
+# DisktreeX
 
 A fast, native disk-space treemap for macOS, in the spirit of WizTree. It scans a whole Mac (3.6M files) in about 14 seconds.
 
 <p>
-  <img src="assets/screenshot.png" width="49%" alt="BlitzTree treemap view of /Applications">
-  <img src="assets/screenshot-rings.png" width="49%" alt="BlitzTree rings view of /Applications">
+  <img src="assets/screenshot.png" width="49%" alt="DisktreeX treemap view of /Applications">
+  <img src="assets/screenshot-rings.png" width="49%" alt="DisktreeX rings view of /Applications">
 </p>
 
 ## Install
 
-**[Download BlitzTree.dmg](https://github.com/ahmedkhaleel2004/blitztree/releases/latest/download/BlitzTree.dmg)** and drag the app into Applications. Requires Apple Silicon and macOS 14 or later.
+**[Download the latest release](https://github.com/ahmedkhaleel2004/blitztree/releases/latest)** and drag the app into Applications. Requires Apple Silicon and macOS 14 or later.
 
 Signed with a Developer ID and notarized by Apple, so it opens like any other app. Grant Full Disk Access when prompted, then relaunch.
 
@@ -21,16 +21,16 @@ Signed with a Developer ID and notarized by Apple, so it opens like any other ap
 - Prefer DaisyDisk? Switch to rings in the toolbar: click a folder to zoom in, the middle to go back
 - Zoom into folders, reveal in Finder, or move to Trash (with confirmation)
 - Clean Up panel: finds folders that are safe to delete (caches, `node_modules`, Rust `target`, Xcode DerivedData and more) so you can trash them in one go
-- AI cleanup: click "Clean up with Claude Code" (or Codex) and your own agent plans what can go, live in the panel, while the treemap lights up those folders. BlitzTree does the cleanup itself, in two steps you approve: move to Trash, then delete for good. No agent installed? One click sets up Codex (free with a ChatGPT account) or Claude Code
+- AI cleanup: click "Clean up with Claude Code" (or Codex) and your own agent plans what can go, live in the panel, while the treemap lights up those folders. DisktreeX does the cleanup itself, in two steps you approve: move to Trash, then delete for good. No agent installed? One click sets up Codex (free with a ChatGPT account) or Claude Code
 - Live progress while scanning, and an optional free-space block
 - Native AppKit/SwiftUI, with the Liquid Glass design on macOS 26 and later
-- No telemetry. BlitzTree itself only goes online to check GitHub for updates once a day (installed when you quit); the AI cleanup only runs when you click it, using your own agent, which sends folder paths and sizes from the scan (never file contents) to Anthropic or OpenAI
+- No telemetry. DisktreeX itself only goes online to check GitHub for updates once a day (installed when you quit); the AI cleanup only runs when you click it, using your own agent, which sends folder paths and sizes from the scan (never file contents) to Anthropic or OpenAI
 
 ## Performance
 
 | Home folder, 3.1M entries (M4) | Time |
 |---|---|
-| **BlitzTree** | **10.2 s** |
+| **DisktreeX** | **10.2 s** |
 | Parallel `readdir` + `lstat` | 14.4 s |
 | `du -skx` | 65.3 s |
 
@@ -46,7 +46,7 @@ Sizes are allocated bytes, matching `du`. Hard-linked files count once, the scan
 
 ## AI cleanup
 
-The agent runs headless and read-only: it only writes a plan from the scan BlitzTree already has. BlitzTree then acts on it behind its own checks, whatever the plan says:
+The agent runs headless and read-only: it only writes a plan from the scan DisktreeX already has. DisktreeX then acts on it behind its own checks, whatever the plan says:
 
 - Only paths inside your home folder, never Documents, Desktop, Photos, iCloud Drive, Mail, keychains or `~/.ssh` (build output such as `node_modules` inside them is allowed, and so are the Codex app's chat folders in `~/Documents/Codex`), never a git repository or a whole folder like `~/Library/Caches`
 - Only each tool's own cache cleanup commands (`uv cache clean`, `brew cleanup`, `npm cache clean` and similar, plus `xcrun simctl` for Xcode simulator runtimes and device data), with no shell syntax
@@ -59,12 +59,12 @@ The agent runs headless and read-only: it only writes a plan from the scan Blitz
 Requires Xcode 26 or later and Rust.
 
 ```sh
-./build.sh              # build/BlitzTree.app
+./build.sh              # build/DisktreeX.app
 ./deploy.sh             # build and install to /Applications
 cargo test --release    # engine tests
 ```
 
-The Rust engine hands the finished tree to the Swift UI as flat arrays over a C interface, with no copying. `BlitzTree <path>` scans a specific folder.
+The Rust engine hands the finished tree to the Swift UI as flat arrays over a C interface, with no copying. `DisktreeX <path>` scans a specific folder.
 
 ## JSON CLI for agents and scripts
 

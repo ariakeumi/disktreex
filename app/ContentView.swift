@@ -11,7 +11,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                Color(nsColor: NSColor(calibratedWhite: 0.10, alpha: 1))
+                Color(nsColor: .windowBackgroundColor)
                 // Build the empty canvases while the first scan is running,
                 // so AppKit setup does not delay the finished tree. Once built,
                 // the list and treemap stay alive (hidden) through
@@ -50,7 +50,7 @@ struct ContentView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: NSColor(calibratedWhite: 0.10, alpha: 1)))
+                    .background(Color(nsColor: .windowBackgroundColor))
                     .contentShape(Rectangle())
                 }
             }
@@ -89,9 +89,9 @@ struct ContentView: View {
             Image(systemName: "lock.shield")
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.secondary)
-            Text("BlitzTree needs Full Disk Access")
+            Text("DisktreeX needs Full Disk Access")
                 .font(.title2.weight(.semibold))
-            Text("System Settings → Privacy & Security → Full Disk Access.\nRemove any old BlitzTree rows, then add /Applications/BlitzTree.app.\nmacOS only applies the permission to a freshly launched app.")
+            Text("System Settings → Privacy & Security → Full Disk Access.\nRemove any old DisktreeX rows, then add /Applications/DisktreeX.app.\nmacOS only applies the permission to a freshly launched app.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .font(.callout)
@@ -254,7 +254,7 @@ private struct ScanProgress: View {
             Text(Fmt.size(model.bytes))
                 .font(.system(size: 44, weight: .semibold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Text("\(Fmt.num(model.files)) files · \(Fmt.num(model.dirs)) folders · \(String(format: "%.2f", model.elapsed))s")
                 .font(.system(.body, design: .monospaced))
                 .foregroundStyle(.secondary)
@@ -310,7 +310,7 @@ private struct ScanStatusBar: View {
                         .monospacedDigit()
                 }
             } else {
-                Text("BlitzTree").foregroundStyle(.tertiary)
+                Text("DisktreeX").foregroundStyle(.tertiary)
                 Spacer()
             }
         }
@@ -408,6 +408,41 @@ final class ValueCell: NSTableCellView {
         super.layout()
         textField?.frame = NSRect(x: 0, y: ((bounds.height - Self.lineHeight) / 2).rounded(),
                                   width: max(0, bounds.width - 2), height: Self.lineHeight)
+    }
+}
+
+/// Keep native row navigation while supporting Finder-style path copying.
+final class DirectoryOutlineView: NSOutlineView, NSMenuItemValidation {
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let row = row(at: convert(event.locationInWindow, from: nil))
+        guard row >= 0 else { return nil }
+        selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        window?.makeFirstResponder(self)
+        let menu = NSMenu()
+        let copy = NSMenuItem(title: "Copy Path", action: #selector(copy(_:)), keyEquivalent: "")
+        copy.target = self
+        menu.addItem(copy)
+        return menu
+    }
+
+    @objc func copy(_ sender: Any?) {
+        guard let item = item(atRow: selectedRow) as? OutlinePanel.Item else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(item.tree.path(item.id), forType: .string)
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        menuItem.action == #selector(copy(_:)) && selectedRow >= 0
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+           event.charactersIgnoringModifiers?.lowercased() == "c" {
+            copy(nil)
+        } else {
+            super.keyDown(with: event)
+        }
     }
 }
 
@@ -645,7 +680,7 @@ struct OutlinePanel: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let outline = NSOutlineView()
+        let outline = DirectoryOutlineView()
         outline.style = .plain
         outline.rowSizeStyle = .default
         outline.usesAlternatingRowBackgroundColors = true

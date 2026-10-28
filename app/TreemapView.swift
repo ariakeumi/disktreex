@@ -31,6 +31,11 @@ final class TreemapNSView: NSView {
 
     override var isFlipped: Bool { true }
 
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        effectiveAppearance.performAsCurrentDrawingAppearance { relayout() }
+    }
+
     override func layout() {
         super.layout()
         relayoutIfNeeded()
@@ -76,7 +81,8 @@ final class TreemapNSView: NSView {
         let ph = max(1, Int((bounds.height * scale).rounded()))
         let r = TreemapRenderer.render(
             tree: tree, pw: pw, ph: ph, scale: scale, root: model?.viewRoot ?? 0,
-            showFree: model?.showFreeSpace ?? false, freeBytes: model?.freeBytes ?? 0
+            showFree: model?.showFreeSpace ?? false, freeBytes: model?.freeBytes ?? 0,
+            lightAppearance: effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) != .darkAqua
         )
         if ProcessInfo.processInfo.environment["BZ_TIMING"] != nil {
             NSLog("BZ render %dx%d: %d steps, layout %.1f ms, paint %.1f ms (%d bands)",
@@ -106,7 +112,7 @@ final class TreemapNSView: NSView {
                     ? "Free space  ·  \(Fmt.size(freeBytes))" : "Free space"
                 name = NSAttributedString(string: text, attributes: [
                     .font: NSFont.systemFont(ofSize: 11, weight: .semibold),
-                    .foregroundColor: NSColor.white.withAlphaComponent(0.55),
+                    .foregroundColor: NSColor.secondaryLabelColor,
                 ])
                 let s = name.size()
                 nameHeight = s.height
@@ -128,14 +134,14 @@ final class TreemapNSView: NSView {
         static func name(_ label: TMLabel, hovered: Bool) -> NSAttributedString {
             NSAttributedString(string: label.name, attributes: [
                 .font: NSFont.systemFont(ofSize: 10.5, weight: .semibold),
-                .foregroundColor: NSColor.white.withAlphaComponent(hovered ? 1.0 : 0.92),
+                .foregroundColor: hovered ? NSColor.white : NSColor.labelColor,
             ])
         }
 
         static func size(_ label: TMLabel, tree: Tree, hovered: Bool) -> NSAttributedString {
             NSAttributedString(string: Fmt.size(tree.alloc[label.node]), attributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .medium),
-                .foregroundColor: NSColor.white.withAlphaComponent(hovered ? 0.95 : 0.60),
+                .foregroundColor: hovered ? NSColor.white.withAlphaComponent(0.95) : NSColor.secondaryLabelColor,
             ])
         }
     }
